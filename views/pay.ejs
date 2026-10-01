@@ -1,17 +1,54 @@
-<%- include("partials/head", { title: "Paying" }) %>
+<%- include("partials/head", { title: "Order " + orderId }) %>
 
-<h1>Waiting for your MoMo payment</h1>
+<h1>Order #<span id="order-ref"><%= orderId %></span></h1>
 
 <div class="panel"
      data-poll-url="/pay/status/<%= referenceId %>"
      data-poll-ms="3000">
   <p class="amount"><%= currency %> <%= amount %></p>
-  <p class="muted">Order <span id="order-ref">#<%= orderId %></span></p>
-  <p class="muted small">Reference <code><%= referenceId %></code></p>
-
   <p id="pay-state" class="state state-pending">Approve the prompt on your phone&hellip;</p>
   <p id="pay-hint" class="muted small">This page updates by itself. You can close it and come back.</p>
 </div>
+
+<section class="receipt">
+  <h2>Order details</h2>
+
+  <table class="lines">
+    <thead>
+      <tr><th>Item</th><th class="num">Qty</th><th class="num">Line total</th></tr>
+    </thead>
+    <tbody>
+      <% items.forEach((item) => { %>
+        <tr>
+          <td><%= item.name %></td>
+          <td class="num"><%= item.quantity %></td>
+          <td class="num"><%= currency %> <%= item.lineTotal %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+    <tfoot>
+      <tr><th>Total</th><th></th><th class="num"><%= currency %> <%= orderTotal %></th></tr>
+    </tfoot>
+  </table>
+
+  <dl class="meta">
+    <dt>Order status</dt>
+    <dd><span class="badge badge-<%= orderStatus %>"><%= orderStatus %></span></dd>
+
+    <dt>Customer</dt>
+    <dd><%= customerName || "Not provided" %></dd>
+
+    <dt>MoMo number</dt>
+    <dd><%= customerPhone || payerPhone || "Not provided" %></dd>
+
+    <dt>Payment reference</dt>
+    <dd><code><%= referenceId %></code></dd>
+  </dl>
+
+  <p class="muted small">
+    Keep this reference. It is the only way to view these order details again.
+  </p>
+</section>
 
 <script src="/js/pay.js"></script>
 <%- include("partials/foot") %>

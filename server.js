@@ -118,8 +118,19 @@ app.post("/pay", async (req, res) => {
 
     res.status(202).json({ message: "Approve the payment on your phone", referenceId });
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: "Could not start payment" });
+    console.error("[pay] " + err.message);
+    // Give the customer something actionable instead of a dead end, without
+    // leaking MTN's raw response (it can contain account detail).
+    const reason = /token failed: 401|invalid_client/i.test(err.message)
+      ? "MTN rejected this server's credentials. Check SUBSCRIPTION_KEY, MOMO_API_USER and MOMO_API_KEY."
+      : /token failed/i.test(err.message)
+      ? "This server could not authenticate with MTN."
+      : /requestToPay failed: 4\d\d/i.test(err.message)
+      ? "MTN refused the payment request. Check the amount, currency and phone number."
+      : /ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ETIMEDOUT|fetch failed/i.test(err.message)
+      ? "Could not reach MTN's servers. Please try again."
+      : "Could not start payment. Please try again.";
+    res.status(502).json({ error: reason });
   }
 });
 

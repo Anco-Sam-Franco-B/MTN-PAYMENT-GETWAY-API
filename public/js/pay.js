@@ -29,7 +29,7 @@
       var data = await res.json().catch(function () { return {}; });
       if (!res.ok) throw new Error(data.error || "Could not read payment status");
 
-      if (data.orderId && orderRef) orderRef.textContent = "#" + data.orderId;
+      if (data.orderId && orderRef) orderRef.textContent = String(data.orderId);
 
       if (data.status === "SUCCESSFUL") {
         setState("success", "Payment received. Thank you!",

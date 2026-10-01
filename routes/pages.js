@@ -56,18 +56,40 @@ router.get(
     if (!/^[0-9a-f-]{36}$/i.test(referenceId)) return res.status(400).send("Invalid reference");
 
     const { rows: [payment] } = await db.query(
-      "SELECT p.order_id, p.amount, p.currency, p.status FROM payments p WHERE p.reference_id = $1",
+      `SELECT p.order_id, p.amount, p.currency, p.status, p.phone,
+              o.total, o.status AS order_status,
+              o.customer_name, o.customer_phone
+         FROM payments p
+         JOIN orders o ON o.id = p.order_id
+        WHERE p.reference_id = $1`,
       [referenceId]
     );
     if (!payment) return res.status(404).send("Payment not found");
 
+    // The reference UUID is unguessable, so it doubles as the receipt token. This
+    // is the only place order contents are exposed; /orders/:id stays admin-only.
+    const { rows: items } = await db.query(
+      "SELECT name, unit_price, quantity FROM order_items WHERE order_id = $1 ORDER BY id",
+      [payment.order_id]
+    );
+
     res.render("pay", {
       ...base(),
-      title: "Paying",
+      title: "Order " + payment.order_id,
       referenceId,
       orderId: payment.order_id,
       amount: formatMoney(payment.amount),
       currency: payment.currency || config.currency,
+      orderTotal: formatMoney(payment.total),
+      orderStatus: payment.order_status,
+      customerName: payment.customer_name,
+      customerPhone: payment.customer_phone,
+      payerPhone: payment.phone,
+      items: items.map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        lineTotal: formatMoney(Number(i.unit_price) * i.quantity),
+      })),
     });
   })
 );

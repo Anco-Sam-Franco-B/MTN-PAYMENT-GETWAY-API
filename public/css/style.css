@@ -144,6 +144,26 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 .badge-PAID { background: #1d3327; color: var(--ok); }
 .badge-CANCELLED { background: #3a2224; color: var(--bad); }
 
+.receipt {
+  max-width: 640px;
+  margin-top: 28px;
+  padding: 24px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.receipt h2 { margin-top: 0; font-size: 1.1rem; }
+
+dl.meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 20px;
+  margin: 0;
+  font-size: 0.92rem;
+}
+dl.meta dt { color: var(--muted); }
+dl.meta dd { margin: 0; }
+
 footer {
   padding: 20px 24px;
   border-top: 1px solid var(--line);
