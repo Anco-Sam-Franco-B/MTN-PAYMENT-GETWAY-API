@@ -74,6 +74,12 @@ async function applyResult(paymentId, orderId, status) {
 
 // 1) Start a payment. The amount comes from YOUR database, never from the client.
 app.post("/pay", async (req, res) => {
+  if (!config.paymentsReady) {
+    return res.status(503).json({
+      error: "Payments are not configured on this server yet",
+      detail: `Missing ${config.missingMomo.join(", ")}`,
+    });
+  }
   try {
     const orderId = Number(req.body.orderId);
     const phone = normalizePhone(req.body.phone);

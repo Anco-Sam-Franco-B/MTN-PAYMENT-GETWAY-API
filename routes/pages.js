@@ -21,20 +21,33 @@ const base = () => ({
   isProduction: config.isProduction,
 });
 
+// Active products with a display-ready price.
+async function loadProducts() {
+  const { rows } = await db.query("SELECT id, name, price FROM products WHERE active ORDER BY id");
+  return rows.map((p) => ({ ...p, priceText: formatMoney(p.price) }));
+}
+
 router.get(
   "/",
   wrap(async (req, res) => {
-    const { rows } = await db.query(
-      "SELECT id, name, price FROM products WHERE active ORDER BY id"
-    );
-    const products = rows.map((p) => ({ ...p, priceText: formatMoney(p.price) }));
-    res.render("shop", { ...base(), title: "Products", products });
+    res.render("shop", { ...base(), title: "Products", products: await loadProducts() });
   })
 );
 
 router.get("/checkout", (req, res) => {
   res.render("checkout", { ...base(), title: "Checkout" });
 });
+
+// The cart lives in localStorage, so any page showing it needs the product names
+// and prices. Pages that render product cards can read them from the DOM; this
+// endpoint covers the rest (currently just checkout).
+router.get(
+  "/api/products",
+  wrap(async (req, res) => {
+    res.set("Cache-Control", "public, max-age=60");
+    res.json(await loadProducts());
+  })
+);
 
 router.get(
   "/pay/:referenceId",

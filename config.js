@@ -46,14 +46,22 @@ function requireSecret(name) {
   return value;
 }
 
-const missing = [];
-if (!process.env.DATABASE_URL) missing.push("DATABASE_URL");
-if (!process.env.SUBSCRIPTION_KEY) missing.push("SUBSCRIPTION_KEY");
-if (!process.env.MOMO_API_USER) missing.push("MOMO_API_USER");
-if (!process.env.MOMO_API_KEY) missing.push("MOMO_API_KEY");
-if (!adminKey) missing.push("ADMIN_API_KEY");
-if (missing.length) {
-  throw new Error(`Missing required environment variable(s): ${missing.join(", ")}`);
+// Without a database nothing works, so this one is fatal.
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is not set in .env");
+}
+
+// Missing MoMo credentials should not stop the storefront from booting. The shop
+// still works and checkout can be exercised; only taking a payment is refused,
+// with a clear 503, rather than the whole process dying on startup.
+const momoCredentials = ["SUBSCRIPTION_KEY", "MOMO_API_USER", "MOMO_API_KEY"];
+const missingMomo = momoCredentials.filter((name) => !String(process.env[name] || "").trim());
+const paymentsReady = missingMomo.length === 0;
+
+if (missingMomo.length) {
+  console.warn(
+    `[config] MoMo credentials missing (${missingMomo.join(", ")}). The shop will run, but /pay returns 503 until they are set.`
+  );
 }
 
 if (isProduction) {
@@ -84,6 +92,8 @@ module.exports = {
   callbackUrl,
   adminKey,
   zeroDecimalCurrency: ZERO_DECIMAL_CURRENCIES.has(currency),
+  paymentsReady,
+  missingMomo,
   isZeroDecimalCurrency(code) {
     return ZERO_DECIMAL_CURRENCIES.has(String(code || "").toUpperCase());
   },
@@ -96,6 +106,7 @@ module.exports = {
       `X-Target-Env     : ${targetEnv}`,
       `Currency         : ${currency}${ZERO_DECIMAL_CURRENCIES.has(currency) ? " (whole amounts only)" : ""}`,
       `Callback URL     : ${callbackUrl || "(none - using Partner Portal value)"}`,
+      `Payments         : ${paymentsReady ? "ready" : "DISABLED (missing " + missingMomo.join(", ") + ")"}`,
     ].join("\n");
   },
 };

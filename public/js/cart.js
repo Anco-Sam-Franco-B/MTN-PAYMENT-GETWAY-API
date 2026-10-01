@@ -42,14 +42,38 @@
     if (badge) badge.textContent = String(count(read()));
   }
 
-  function catalog() {
-    var cards = document.querySelectorAll("[data-product-id]");
+  // Products can come from two places:
+  //  - product cards rendered on this page (the shop page), or
+  //  - GET /api/products, because the checkout page has no cards.
+  // The old code only read the DOM, so the checkout cart rendered no lines.
+  var fetched = null;
+
+  function domCatalog() {
     var map = {};
-    Array.prototype.forEach.call(cards, function (card) {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-product-id]"), function (card) {
+      var heading = card.querySelector("h2");
       map[card.dataset.productId] = {
-        name: card.querySelector("h2").textContent.trim(),
+        name: heading ? heading.textContent.trim() : "Product " + card.dataset.productId,
         price: Number(card.dataset.productPrice)
       };
+    });
+    return map;
+  }
+
+  async function catalog() {
+    var fromDom = domCatalog();
+    if (Object.keys(fromDom).length) return fromDom;
+    if (!fetched) {
+      try {
+        var res = await fetch("/api/products", { headers: { Accept: "application/json" } });
+        fetched = res.ok ? await res.json() : {};
+      } catch (e) {
+        fetched = {};
+      }
+    }
+    var map = {};
+    (fetched || []).forEach(function (p) {
+      map[p.id] = { name: p.name, price: Number(p.price) };
     });
     return map;
   }
@@ -62,9 +86,13 @@
     paint();
   }
 
-  function paint() {
+  // Repaint requests can overlap while the catalog is still loading, so only the
+  // newest one is allowed to write to the table.
+  var paintSeq = 0;
+
+  async function paint() {
+    var seq = ++paintSeq;
     var cart = read();
-    var products = catalog();
 
     Array.prototype.forEach.call(document.querySelectorAll("[data-product-id]"), function (card) {
       var value = card.querySelector("[data-qty]");
@@ -93,11 +121,19 @@
     var root = document.getElementById("checkout-root");
     currency = (root && root.dataset.currency) || currency;
 
+    var products = await catalog();
+    if (seq !== paintSeq) return; // a newer paint() superseded this one
+
     var cents = 0;
     lines.textContent = "";
+    var missing = [];
     ids.forEach(function (id) {
       var p = products[id];
-      if (!p) return;
+      if (!p) {
+        // Do not silently drop it: the total would stop matching the cart.
+        missing.push(id);
+        return;
+      }
       var qty = cart[id];
       var line = Math.round(p.price * 100) * qty;
       cents += line;
@@ -128,6 +164,29 @@
 
     totalEl.textContent = money(cents);
     refreshBadge();
+    flagUnavailable(missing.length);
+  }
+
+  // If something in the cart can no longer be bought, block payment rather than
+  // let the customer pay a total that quietly differs from what they chose.
+  function flagUnavailable(count) {
+    var warning = document.getElementById("cart-warning");
+    var button = document.getElementById("pay-button");
+    if (count > 0) {
+      if (warning) {
+        warning.textContent =
+          count + (count === 1 ? " item in your cart is " : " items in your cart are ") +
+          "no longer available. Remove " + (count === 1 ? "it" : "them") + " to continue.";
+        warning.hidden = false;
+      }
+      if (button) button.disabled = true;
+    } else {
+      if (warning) {
+        warning.textContent = "";
+        warning.hidden = true;
+      }
+      if (button) button.disabled = false;
+    }
   }
 
   document.addEventListener("click", function (e) {

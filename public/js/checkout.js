@@ -35,40 +35,50 @@
     return data;
   }
 
+  // Once an order exists, a failed payment must not create a second order. Keep
+  // the id so "Try again" re-pays the same one.
+  var pendingOrderId = null;
+
   form.addEventListener("submit", async function (e) {
     e.preventDefault();
     showError("");
 
-    var cart = readCart();
-    var items = Object.keys(cart).map(function (id) {
-      return { productId: Number(id), quantity: cart[id] };
-    });
-    if (items.length === 0) {
-      showError("Your cart is empty.");
-      return;
-    }
-
     button.disabled = true;
-    button.textContent = "Starting payment...";
+    var wasRetry = pendingOrderId !== null;
+    button.textContent = wasRetry ? "Retrying payment..." : "Starting payment...";
 
     try {
-      var order = await postJSON("/orders", {
-        items: items,
-        customerName: form.elements.customerName.value,
-        customerPhone: phone.value
-      });
+      if (pendingOrderId === null) {
+        var cart = readCart();
+        var items = Object.keys(cart).map(function (id) {
+          return { productId: Number(id), quantity: cart[id] };
+        });
+        if (items.length === 0) {
+          showError("Your cart is empty.");
+          button.disabled = false;
+          button.textContent = "Pay with MoMo";
+          return;
+        }
+
+        var order = await postJSON("/orders", {
+          items: items,
+          customerName: form.elements.customerName.value,
+          customerPhone: phone.value
+        });
+        pendingOrderId = order.id;
+      }
 
       var payment = await postJSON("/pay", {
-        orderId: order.id,
+        orderId: pendingOrderId,
         phone: phone.value
       });
 
       localStorage.removeItem(KEY);
       window.location.href = "/pay/" + encodeURIComponent(payment.referenceId);
     } catch (err) {
-      showError(err.message);
+      showError(err.message + (pendingOrderId ? " Use Try again to retry this order." : ""));
       button.disabled = false;
-      button.textContent = "Pay with MoMo";
+      button.textContent = pendingOrderId ? "Try again" : "Pay with MoMo";
     }
   });
 })();
