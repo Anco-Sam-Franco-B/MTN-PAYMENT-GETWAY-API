@@ -1,0 +1,48 @@
+<%- include("partials/head", { title: "Admin" }) %>
+
+<h1>Orders</h1>
+
+<p class="muted">
+  Admin routes are protected by the <code>x-admin-key</code> header. Enter the key below &mdash;
+  it is kept in this browser tab only and sent as a header, never in the URL.
+</p>
+
+<form id="key-form" class="form inline">
+  <label>Admin key
+    <input type="password" id="admin-key" autocomplete="off" required>
+  </label>
+  <button class="button" type="submit">Unlock</button>
+  <button class="button ghost" type="button" id="sign-out" hidden>Sign out</button>
+</form>
+
+<p id="admin-error" class="error" hidden></p>
+
+<div id="orders-root" hidden>
+  <form id="filter-form" class="form inline">
+    <label>Status
+      <select id="filter-status">
+        <option value="">All</option>
+        <option value="UNPAID">UNPAID</option>
+        <option value="PAID">PAID</option>
+        <option value="CANCELLED">CANCELLED</option>
+      </select>
+    </label>
+    <button class="button" type="submit">Filter</button>
+  </form>
+
+  <table class="lines">
+    <thead>
+      <tr><th>ID</th><th>Customer</th><th>Phone</th><th>Total</th><th>Status</th><th>Created</th><th></th></tr>
+    </thead>
+    <tbody id="orders-body"></tbody>
+  </table>
+
+  <p class="muted" id="orders-meta"></p>
+  <p>
+    <button class="button ghost" type="button" id="prev-page">Previous</button>
+    <button class="button ghost" type="button" id="next-page">Next</button>
+  </p>
+</div>
+
+<script src="/js/admin.js"></script>
+<%- include("partials/foot") %>

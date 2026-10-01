@@ -1,0 +1,32 @@
+{
+  "name": "mtn-payment-gateway",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [
+    "MTN-MOMO-API"
+  ],
+  "license": "ISC",
+  "author": "Sam Franco BYIRINGIRO",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "migrate": "node migrate.js up",
+    "migrate:status": "node migrate.js status",
+    "seed": "node seed.js",
+    "momo:callback": "node scripts/simulate-callback.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "crypto": "^1.0.1",
+    "ejs": "^6.0.1",
+    "express": "^5.2.1",
+    "helmet": "^8.3.0",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "dotenv": "^18.0.5",
+    "nodemon": "^3.1.14"
+  }
+}

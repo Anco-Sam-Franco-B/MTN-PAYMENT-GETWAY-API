@@ -1,0 +1,38 @@
+# Render blueprint for https://render.com
+# Set the secret values in the Render dashboard (Environment), not in this file.
+services:
+  - type: web
+    name: mtn-payment-gateway-api
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: false
+    envVars:
+      - key: NODE_VERSION
+        value: "22.16.0"
+      - key: MOMO_ENV
+        value: production
+      - key: MOMO_TARGET_ENV
+        value: mtnrwanda
+      - key: MOMO_CURRENCY
+        value: RWF
+      - key: MOMO_BASE_URL
+        value: https://proxy.momoapi.mtn.com
+      - key: CALLBACK_URL
+        value: https://mtn-payment-getway-api.onrender.com/momo/callback
+      - key: FRONTEND_ORIGIN
+        value: ""
+      # Secrets: fill these in the Render dashboard.
+      - key: SUBSCRIPTION_KEY
+        sync: false
+      - key: MOMO_API_USER
+        sync: false
+      - key: MOMO_API_KEY
+        sync: false
+      - key: ADMIN_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false

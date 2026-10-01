@@ -1,0 +1,33 @@
+<%- include("partials/head", { title }) %>
+
+<h1>Our products</h1>
+<p class="muted">Prices are in <%= currency %>. Add items, then pay with MoMo on the checkout page.</p>
+
+<% if (isProduction) { %>
+  <p class="notice">Live payments. You will be charged real money in <%= currency %> when you pay.</p>
+<% } else { %>
+  <p class="notice">Sandbox mode. No real money moves.</p>
+<% } %>
+
+<div class="grid">
+  <% products.forEach((p) => { %>
+    <article class="card" data-product-id="<%= p.id %>" data-product-price="<%= p.price %>">
+      <h2><%= p.name %></h2>
+      <p class="price"><%= currency %> <%= p.priceText %></p>
+      <div class="qty">
+        <button type="button" data-action="dec" aria-label="Remove one">&minus;</button>
+        <span class="qty-value" data-qty>0</span>
+        <button type="button" data-action="inc" aria-label="Add one">+</button>
+      </div>
+    </article>
+  <% }) %>
+</div>
+
+<% if (!products.length) { %>
+  <p class="empty">No products yet. Run <code>npm run seed</code>.</p>
+<% } %>
+
+<a class="button primary" href="/checkout">Go to checkout</a>
+
+<script src="/js/cart.js"></script>
+<%- include("partials/foot") %>
