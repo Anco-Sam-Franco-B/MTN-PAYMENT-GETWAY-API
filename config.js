@@ -40,6 +40,35 @@ const adminKey = String(process.env.ADMIN_API_KEY || "");
 // must be sent as whole numbers.
 const ZERO_DECIMAL_CURRENCIES = new Set(["RWF", "UGX", "XAF", "XOF", "ZMW", "SZL", "GNF", "LRD"]);
 
+// Mobile prefixes that can pay a MoMo request. Per Rwanda's RURA numbering plan,
+// MTN Rwandacell holds 078 and 079; Airtel Rwanda holds 072 and 073. Override with
+// MOMO_PHONE_PREFIXES=078,079 if the allocation changes.
+const phonePrefixes = String(process.env.MOMO_PHONE_PREFIXES || "078,079")
+  .split(",")
+  .map((p) => p.replace(/\D/g, ""))
+  .filter(Boolean);
+
+if (!phonePrefixes.length) {
+  throw new Error("MOMO_PHONE_PREFIXES was set but contained no digits");
+}
+
+// A local 0781234567 becomes 250781234567: the country code replaces the leading
+// zero, so the pattern matches 250 + 78 + seven digits.
+const phonePattern = new RegExp(
+  `^250(?:${phonePrefixes.map((p) => p.replace(/^0/, "")).join("|")})\\d{7}$`
+);
+
+const listOr = (items) =>
+  items.length <= 1 ? items.join("") : items.slice(0, -1).join(", ") + " or " + items[items.length - 1];
+
+function phoneRequirement() {
+  return (
+    `Enter an MTN Rwanda mobile number, for example ${phonePrefixes[0]}1234567. ` +
+    `It must start with ${listOr(phonePrefixes)}. ` +
+    "Numbers starting 072 or 073 are Airtel and cannot pay with MoMo."
+  );
+}
+
 function requireSecret(name) {
   const value = String(process.env[name] || "").trim();
   if (!value) throw new Error(`${name} is not set in .env`);
@@ -92,6 +121,9 @@ module.exports = {
   callbackUrl,
   adminKey,
   zeroDecimalCurrency: ZERO_DECIMAL_CURRENCIES.has(currency),
+  phonePrefixes,
+  acceptsPhone: (normalized) => phonePattern.test(String(normalized || "")),
+  phoneRequirement,
   paymentsReady,
   missingMomo,
   isZeroDecimalCurrency(code) {
@@ -106,6 +138,7 @@ module.exports = {
       `X-Target-Env     : ${targetEnv}`,
       `Currency         : ${currency}${ZERO_DECIMAL_CURRENCIES.has(currency) ? " (whole amounts only)" : ""}`,
       `Callback URL     : ${callbackUrl || "(none - using Partner Portal value)"}`,
+      `Phone prefixes   : ${phonePrefixes.join(", ")}`,
       `Payments         : ${paymentsReady ? "ready" : "DISABLED (missing " + missingMomo.join(", ") + ")"}`,
     ].join("\n");
   },

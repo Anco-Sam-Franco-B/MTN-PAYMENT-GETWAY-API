@@ -2,7 +2,7 @@ const express = require("express");
 const crypto = require("crypto");
 const db = require("../db");
 const config = require("../config");
-const { normalizePhone, isMtnRwandaNumber, rwandaPhoneRequirement } = require("../utils");
+const { normalizePhone } = require("../utils");
 
 const router = express.Router();
 
@@ -83,8 +83,8 @@ function parseCustomer(body) {
     if (phone && !/^\d{9,15}$/.test(phone)) throw new HttpError(400, "Invalid customerPhone");
     // Check the MoMo prefix here too, not just at /pay. Otherwise an order gets
     // created for a number that can never be paid, and it sits UNPAID forever.
-    if (phone && config.isProduction && !isMtnRwandaNumber(phone)) {
-      throw new HttpError(400, rwandaPhoneRequirement());
+    if (phone && config.isProduction && !config.acceptsPhone(phone)) {
+      throw new HttpError(400, config.phoneRequirement());
     }
     out.customer_phone = phone || null;
   }

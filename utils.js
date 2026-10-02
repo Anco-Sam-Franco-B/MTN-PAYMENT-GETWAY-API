@@ -5,20 +5,5 @@ function normalizePhone(input) {
   return p;
 }
 
-// MTN Rwanda mobile numbers are 078. The 072, 073 and 074 prefixes belong to
-// other networks, so they cannot pay a MoMo request at all.
-const MTN_RWANDA_MSISDN = /^25078\d{7}$/;
-
-function isMtnRwandaNumber(normalized) {
-  return MTN_RWANDA_MSISDN.test(normalized);
-}
-
-function rwandaPhoneRequirement() {
-  return "Enter an MTN Rwanda mobile number, for example 0781234567. It must start with 078; numbers starting 072, 073 or 074 belong to other networks and cannot pay with MoMo.";
-}
-
-module.exports = {
-  normalizePhone,
-  isMtnRwandaNumber,
-  rwandaPhoneRequirement,
-};
+// Which prefixes are payable is environment config, so it lives in config.js.
+module.exports = { normalizePhone };

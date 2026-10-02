@@ -5,7 +5,7 @@ const helmet = require("helmet");
 const config = require("./config");
 const db = require("./db");
 const momo = require("./momo");
-const { normalizePhone, isMtnRwandaNumber, rwandaPhoneRequirement } = require("./utils");
+const { normalizePhone } = require("./utils");
 
 const app = express();
 app.set("view engine", "ejs");
@@ -87,11 +87,11 @@ app.post("/pay", async (req, res) => {
     if (!Number.isInteger(orderId) || orderId < 1) {
       return res.status(400).json({ error: "Valid orderId is required" });
     }
-    // Rwanda's MoMo runs on MTN, whose mobile prefixes are 078 (25078). The other
-    // networks (072, 073, 074) cannot pay a MoMo request, so reject them here with
-    // a clear message instead of letting MoMo fail the transaction.
-    if (config.isProduction && !isMtnRwandaNumber(phone)) {
-      return res.status(400).json({ error: rwandaPhoneRequirement() });
+    // Rwanda's MoMo runs on MTN, whose mobile prefixes are 078 and 079. Airtel's
+    // 072 and 073 cannot pay a MoMo request, so reject them here with a clear
+    // message instead of letting MoMo fail the transaction later.
+    if (config.isProduction && !config.acceptsPhone(phone)) {
+      return res.status(400).json({ error: config.phoneRequirement() });
     }
 
     const { rows: [order] } = await db.query(
