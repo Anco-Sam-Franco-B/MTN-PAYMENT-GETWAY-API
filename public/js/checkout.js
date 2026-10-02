@@ -20,8 +20,10 @@
   }
 
   function showError(message) {
-    error.textContent = message;
-    error.hidden = !message;
+    // Server messages have no trailing punctuation, so normalise before appending.
+    var text = (message || "").trim().replace(/[.\s]*$/, "");
+    error.textContent = text ? text + "." : "";
+    error.hidden = !text;
   }
 
   async function postJSON(url, body) {
@@ -76,7 +78,9 @@
       localStorage.removeItem(KEY);
       window.location.href = "/pay/" + encodeURIComponent(payment.referenceId);
     } catch (err) {
-      showError(err.message + (pendingOrderId ? " Use Try again to retry this order." : ""));
+      showError(
+        err.message + (pendingOrderId ? " Use Try again to retry this order." : "")
+      );
       button.disabled = false;
       button.textContent = pendingOrderId ? "Try again" : "Pay with MoMo";
     }

@@ -5,7 +5,7 @@ const helmet = require("helmet");
 const config = require("./config");
 const db = require("./db");
 const momo = require("./momo");
-const { normalizePhone } = require("./utils");
+const { normalizePhone, isMtnRwandaNumber, rwandaPhoneRequirement } = require("./utils");
 
 const app = express();
 app.set("view engine", "ejs");
@@ -90,10 +90,8 @@ app.post("/pay", async (req, res) => {
     // Rwanda's MoMo runs on MTN, whose mobile prefixes are 078 (25078). The other
     // networks (072, 073, 074) cannot pay a MoMo request, so reject them here with
     // a clear message instead of letting MoMo fail the transaction.
-    if (config.isProduction && !/^25078\d{7}$/.test(phone)) {
-      return res.status(400).json({
-        error: "Enter a valid MTN Rwanda number, for example 0781234567",
-      });
+    if (config.isProduction && !isMtnRwandaNumber(phone)) {
+      return res.status(400).json({ error: rwandaPhoneRequirement() });
     }
 
     const { rows: [order] } = await db.query(
